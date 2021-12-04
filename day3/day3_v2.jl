@@ -42,7 +42,10 @@ function reduce_list(A, func)
   while (length(out) > 1) && (j > 0)
     bits = get_bit.(out, j)
     val = func(bits)
-    out = out[bits .== val]
+    keep = bits .== val
+    if sum(Int64.(keep)) > 0
+      out = out[bits .== val]
+    end
     j -= 1
   end
   out
