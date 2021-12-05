@@ -45,23 +45,33 @@ function map_segments!(segments, grid, diagonal=false)
   end
 end
 
+function sum_grid(grid)
+  sum = 0
+  I, J = size(grid)
+  for j in 1:J
+    for i in 1:I
+      sum += Int64(grid[i, j] > 1)
+    end
+  end
+  sum
+end
+
 function problem1(segments)
   grid = create_grid(segments)
   map_segments!(segments,grid)
-  sum(Int64.(grid .> 1))
+  sum_grid(grid)
 end
 
 function problem2(segments)
   grid = create_grid(segments)
   map_segments!(segments,grid, true)
-  sum(Int64.(grid .> 1))
+  sum_grid(grid)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
   A = load("test.txt")
   @assert problem1(A) == 5
   @assert problem2(A) == 12
-
 
   A = load("input.txt")
   println(problem1(A))
