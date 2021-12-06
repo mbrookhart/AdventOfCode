@@ -31,20 +31,20 @@ function evolve_school!(school::School)
   school.fish_count[7] += new_fish
 end
 
-function problem1(fish)
+function evolve_school(fish, timesteps)
   school = MakeSchool(fish)
-  for i in 1:80
+  for i in 1:timesteps
     evolve_school!(school)
   end
   sum(school.fish_count)
 end
 
+function problem1(fish)
+  evolve_school(fish, 80)
+end
+
 function problem2(fish)
-  school = MakeSchool(fish)
-  for i in 1:256
-    evolve_school!(school)
-  end
-  sum(school.fish_count)
+  evolve_school(fish, 256)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
