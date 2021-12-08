@@ -14,6 +14,13 @@ end
 # 5    6
 #  7777
 
+function chars_in_string(a,b)
+  # determines if all of the characters in string b
+  # are also present in string a
+  mapreduce(c->c in a, &, collect(b))
+end
+
+
 function map_patterns_to_number(pattern, value)
   # These are manual rules to figure out what numbers are what by comparing what
   # lines in the following illustration they share
@@ -50,15 +57,12 @@ function map_patterns_to_number(pattern, value)
   six = ""
   for l in len_6s
     found9 = mapreduce(c->c in pattern[l], &, collect(four))
-    if found9
+    if chars_in_string(pattern[l], four)
       nine = String(pattern[l])
+    elseif chars_in_string(pattern[l], one)
+      zero = String(pattern[l])
     else
-      found0 = mapreduce(c->c in pattern[l], &, collect(one))
-      if found0
-        zero = String(pattern[l])
-      else
-        six = String(pattern[l])
-      end
+      six = String(pattern[l])
     end
   end
   # numbers that use 4 lines
@@ -67,16 +71,12 @@ function map_patterns_to_number(pattern, value)
   three = ""
   five = ""
   for l in len_5s
-    found3 = mapreduce(c->c in pattern[l], &, collect(one))
-    if found3
+    if chars_in_string(pattern[l], one)
       three = String(pattern[l])
+    elseif chars_in_string(nine, pattern[l])
+      five = String(pattern[l])
     else
-      found5 = mapreduce(c->c in nine, &, collect(pattern[l]))
-      if found5
-        five = String(pattern[l])
-      else
-        two = String(pattern[l])
-      end
+      two = String(pattern[l])
     end
   end
   dict = Dict(zero=>'0',
@@ -97,7 +97,7 @@ function problem1(patterns, values)
   for value in values
     for word in value
       l = length(word)
-      if l == 2 || l == 3 || l == 4 || l == 7
+      if l in [2, 3, 4, 7]
         total += 1
       end
     end
