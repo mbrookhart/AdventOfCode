@@ -44,6 +44,7 @@ function map_patterns_to_number(pattern, value)
   #seven = [1, 3, 6]
   #eight = [1, 2, 3, 4, 5, 6, 7]
   #nine = [1, 2, 3, 4, 6, 7]
+
   lengths = length.(pattern)
   # Unique numbers
   one = String(pattern[findall(x->x==2, lengths)][1])
@@ -65,7 +66,7 @@ function map_patterns_to_number(pattern, value)
       six = String(pattern[l])
     end
   end
-  # numbers that use 4 lines
+  # numbers that use 5 lines
   len_5s = findall(x->x==5, lengths)
   two = ""
   three = ""
