@@ -57,7 +57,6 @@ function map_patterns_to_number(pattern, value)
   zero = ""
   six = ""
   for l in len_6s
-    found9 = mapreduce(c->c in pattern[l], &, collect(four))
     if chars_in_string(pattern[l], four)
       nine = String(pattern[l])
     elseif chars_in_string(pattern[l], one)
