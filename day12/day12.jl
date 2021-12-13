@@ -25,71 +25,47 @@ function load(file)
   graph
 end
 
-function find_path!(graph, name, visit_count)
-  paths = Array{Array{String, 1}, 1}(undef,0)
-  visit_count[name] += 1
-  function traverse(inputs)
-    for input in inputs
-      if graph[input].big | (visit_count[input] < 1)
-        tmp_count = copy(visit_count)
-        new_paths = find_path!(graph, input, tmp_count)
-        for new_path in new_paths
-          push!(paths,[[name]; new_path])
-        end
+function traverse(graph, visit_count, inputs::Array{String, 1}; kwargs...)
+  sum = 0
+  double_visit = nothing
+  kw_dict = Dict(kwargs...)
+  for input in inputs
+    if graph[input].big | (visit_count[input] < 1)
+      sum += find_path!(graph, input, copy(visit_count); kwargs...)
+    elseif haskey(kw_dict, :double_visit)
+      if (!kw_dict[:double_visit] & (input != "start") & (input != "end"))
+        sum += find_path!(graph, input, copy(visit_count); double_visit=true)
       end
     end
   end
-  traverse(graph[name].inputs)
+  sum
+end
+
+function bidir_traverse(graph, name, visit_count; kwargs...)
+  sum = 0
   # bidrectional traversal
-  if name != "start"
-    traverse(graph[name].outputs)
-  elseif length(paths) == 0
-    push!(paths, [name])
+  if name == "start"
+    sum = 1
+  else
+    sum += traverse(graph, visit_count, graph[name].inputs; kwargs...)
+    sum += traverse(graph, visit_count, graph[name].outputs; kwargs...)
   end
-  paths
+  sum
+end
+
+function find_path!(graph, name, visit_count; kwargs...)
+  visit_count[name] += 1
+  bidir_traverse(graph, name, visit_count; kwargs...)  
 end
   
 function problem1(A)
   visit_count = Dict{String, Int64}(key=>0 for key in keys(A))
-  paths = find_path!(A, "end", visit_count)
-  length(paths)
+  find_path!(A, "end", visit_count)
 end
 
-function find_path!(graph, name, visit_count, double_visit)
-  paths = Array{Array{String, 1}, 1}(undef,0)
-  visit_count[name] += 1
-  function traverse(inputs)
-    for input in inputs
-      if graph[input].big | (visit_count[input] < 1)
-        tmp_count = copy(visit_count)
-        new_paths = find_path!(graph, input, tmp_count, double_visit)
-        for new_path in new_paths
-          push!(paths,[[name]; new_path])
-        end
-      elseif (!double_visit & (input != "start") & (input != "end"))
-        tmp_count = copy(visit_count)
-        new_paths = find_path!(graph, input, tmp_count, true)
-        for new_path in new_paths
-          push!(paths,[[name]; new_path])
-        end
-      end
-    end
-  end
-  traverse(graph[name].inputs)
-  # bidrectional traversal
-  if (name != "start")
-    traverse(graph[name].outputs)
-  elseif name == "start" && length(paths) == 0
-    push!(paths, [name])
-  end
-  paths
-end
-  
 function problem2(A)
   visit_count = Dict{String, Int64}(key=>0 for key in keys(A))
-  
-  paths = find_path!(A, "end", visit_count, false)
-  length(paths)
+  find_path!(A, "end", visit_count; double_visit=false)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
