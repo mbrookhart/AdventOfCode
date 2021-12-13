@@ -1,3 +1,5 @@
+using SparseArrays
+
 function load(file)
   lines = readlines(file)
   points = Array{Array{Int64, 1}, 1}(undef, 0)
@@ -22,7 +24,7 @@ function load(file)
     M = 2 * instructions[1][2] - 1
     N = 2 * instructions[2][2] - 1
   end
-  grid = zeros(N, M)
+  grid = spzeros(N, M)
   for i in 1:size(points)[2]
     grid[points[2, i], points[1, i]] = 1
   end
@@ -56,8 +58,7 @@ function problem2(A)
   for instruction  in instructions
     grid = fold(grid, instruction)
   end
-  display(grid)
-  sum(Int64.(grid))
+  Array(grid)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -68,5 +69,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
   
   B = load("input.txt")
   println(problem1(B))
-  println(problem2(B))
+  display(problem2(B))
 end
