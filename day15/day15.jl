@@ -1,3 +1,5 @@
+using DataStructures
+
 function load(file)
   lines = readlines(file)
   N = length(lines)
@@ -11,45 +13,19 @@ function load(file)
   A
 end
 
-mutable struct PQueue
-  A::Dict{Int64, Array{Int64, 1}}
-  priority::Dict{Int64, Int64}
-  state::Int64
-end
-
-function PQueue()
-  PQueue(Dict{Int64, Array{Int64, 1}}(), Dict{Int64, Int64}(), 0)
-end
-
-function enqueue!(q::PQueue, k::Array{Int64, 1}, v::Int64)
-  q.A[q.state] = k
-  q.priority[q.state] = v
-  q.state += 1
-end
-
-function dequeue!(q::PQueue)
-  minvalue, index = findmin(q.priority)
-  pop!(q.priority, index)
-  pop!(q.A, index)
-end
-
-function len(q::PQueue)
-  length(q.A)
-end
-
 function Astar(A)
   N, M = size(A)
   inbounds = x -> (x[1] >= 1) & (x[1] <= N) & (x[2] >= 1) & (x[2] <= N)
   start = [1, 1]
   goal = [N, M]
-  queue = PQueue()
+  queue = PriorityQueue{Array{Int64, 1}, Int64}()
   enqueue!(queue, start, 0)
   came_from = Dict{Array{Int64, 1}, Array{Int64, 1}}()
   cost_so_far = Dict{Array{Int64, 1}, Int64}() 
   came_from[start] = [0, 0]
   cost_so_far[start] = 0
   heuristic = (goal, next) -> sum(abs.(goal .+ next))
-  while len(queue) > 0
+  while length(queue) > 0
     current = dequeue!(queue)
     if current == goal
       break
@@ -60,7 +36,14 @@ function Astar(A)
       new_cost = cost_so_far[current] + A[next...]
       if !(next in keys(cost_so_far)) || (new_cost < cost_so_far[next])
         cost_so_far[next] = new_cost
-        enqueue!(queue, next, new_cost + heuristic(goal, next))
+        priority = new_cost + heuristic(goal, next)
+        if next in keys(queue) 
+          if queue[next] > priority
+            queue[next] = priority
+          end
+        else 
+          enqueue!(queue, next, priority)
+        end
         came_from[next] = current
       end
     end
