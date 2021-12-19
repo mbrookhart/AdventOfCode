@@ -1,130 +1,140 @@
-using DataStructures
-
-function load(file)
-  lines = readlines(file)
-  map(x->eval(Meta.parse(x)), lines)
+struct Leaf
+  x::Int64
 end
 
-function add(A, B)
-  [A, B]
+struct Node
+  l::Union{Node, Leaf}
+  r::Union{Node, Leaf}
 end
 
-@assert add([1,2], [[3,4],5]) == [[1,2],[[3,4],5]]
+function Node(x::Int64)
+  Leaf(x)
+end
 
-function split(A::Int64, already_split = false)
-  if A > 9
-    l = A ÷ 2
-    r = A - l
-    return [l, r], true
+function Node(A::AbstractVector)
+  Node(Node(A[1]), Node(A[2]))
+end
+
+function show(A::Leaf)
+  string(A.x)
+end
+
+function show(A::Node)
+  s = "["
+  s *= show(A.l)
+  s *= ","
+  s *= show(A.r)
+  s * "]"
+end
+
+function add(l::Union{Node, Leaf}, r::Union{Node, Leaf})
+  Node(l, r)
+end
+
+function split(A::Leaf, already_split = false)
+  if A.x > 9
+    l = A.x ÷ 2
+    r = A.x - l
+    return Node(Leaf(l), Leaf(r)), true
   end
   A, false
 end
 
-function split(A, already_split = false)
-  l, s1 = split(A[1], already_split)
-  r = A[2]
+function split(A::Node, already_split = false)
+  l, s1 = split(A.l, already_split)
+  r = A.r
   s2 = false
   if !s1
-    r, s2 = split(A[2])
+    r, s2 = split(r)
   end
   add(l, r), s1 | s2
 end
 
-@assert split([[[[0,7],4],[15,[0,13]]],[1,1]])[1] == [[[[0,7],4],[[7,8],[0,13]]],[1,1]]
-@assert split([[[[0,7],4],[[7,8],[0,13]]],[1,1]])[1] == [[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]
-
-function add_right(A, r, i)
-  for j in i+1:length(A)
-    if !(A[j] in ['[',']',','])
-      for k in j+1:length(A)
-        if A[k] in ['[',']',',']
-          return A[1:j-1] * string(r + parse(Int64, A[j:k-1])) * A[k:end]
-        end
-      end
-    end
-  end
-  A
-end
-
-function add_left(A, l, i)
-  for j = i-1:-1:1
-    if !(A[j] in ['[',']',','])
-      for k in j-1:-1:1
-        if A[k] in ['[',']',',']
-          return A[1:k] * string(l + parse(Int64, A[k+1:j])) * A[j+1:end]
-        end
-      end
-    end
-  end
-  A
-end
-
-function explode(A::String)
-  stack = Array{Char, 1}(undef, 0)
-  depth = 0
-  for i in 1:length(A)
-    if A[i] == '['
-      depth +=1
-    elseif A[i] == ']'
-      depth -= 1
-    end
-    if depth == 5
-      n = findfirst(']', A[i:end])
-      l, r = eval(Meta.parse(A[i:i + n - 1]))
-      A = A[1:i-1] * "0" * A[i+n:end]
-      A = add_right(A, r, i)
-      A = add_left(A, l, i)
-      break
-    end
-  end
-  A
-end
-
-function show_vector_sans_type(v::AbstractVector)
-  s = "["
-  for (i, elt) in enumerate(v)
-    if i > 1
-      s *= ","
-    end
-    if elt isa AbstractVector
-      s *= show_vector_sans_type(elt)
-    else
-      s *= string(elt)
-    end
-  end
-  s * "]"
-end
-
-function explode(A, depth = 1)
-  s = show_vector_sans_type(A)
-  eval(Meta.parse(explode(s)))
-end
-
-@assert explode([[[[[9,8],1],2],3],4]) == [[[[0,9],2],3],4]
-@assert explode([7,[6,[5,[4,[3,2]]]]]) == [7,[6,[5,[7,0]]]]
-@assert explode([[6,[5,[4,[3,2]]]],1]) == [[6,[5,[7,0]]],3]
-@assert explode([[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]) == [[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]
-@assert explode([[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]) == [[3,[2,[8,0]]],[9,[5,[7,0]]]]
-
-function magnitude(A::Int64)
-  A
+function magnitude(x::Leaf)
+  x.x
 end
   
-function magnitude(A)
-  3 * magnitude(A[1]) + 2 * magnitude(A[2])
+function magnitude(A::Node)
+  3 * magnitude(A.l) + 2 * magnitude(A.r)
 end
 
-@assert magnitude([[1,2],[[3,4],5]]) == 143
-@assert magnitude([[[[0,7],4],[[7,8],[6,0]]],[8,1]]) == 1384
-@assert magnitude([[[[1,1],[2,2]],[3,3]],[4,4]]) == 445
-@assert magnitude([[[[3,0],[5,3]],[4,4]],[5,5]]) == 791
-@assert magnitude([[[[5,0],[7,4]],[5,5]],[6,6]]) == 1137
-@assert magnitude([[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]) == 3488
+function find_exploding_node(A::Leaf, depth = 0)
+  nothing
+end
 
-function reduce(A)
+function find_exploding_node(A::Node, depth = 0)
+  if depth == 4
+    return A
+  else
+    l = find_exploding_node(A.l, depth + 1)
+    if l != nothing
+      return l
+    else
+      return find_exploding_node(A.r, depth + 1)
+    end
+  end
+end
+
+function sort(A::Leaf, depth)
+  out = Array{Tuple{Union{Node, Leaf}, Int64}, 1}(undef, 0)
+  push!(out, (A, depth))
+  out
+end
+
+function sort(A::Node, depth = 0)
+  [sort(A.l, depth + 1); [(A, depth)]; sort(A.r, depth + 1)]
+end
+
+function rewrite(A::Leaf, i, rules)
+  i += 1
+  if i in keys(rules)
+    return rules[i], i
+  end
+  A, i
+end
+
+function rewrite(A::Node, i, rules)
+  l,i = rewrite(A.l, i, rules)
+  i += 1
+  if i in keys(rules)
+    return rules[i], i + 1
+  end
+  r, i = rewrite(A.r, i, rules)
+  Node(l, r), i
+end
+
+function explode(A::Node)
+  sorted = sort(A)
+  exploding_node = find_exploding_node(A)
+  if exploding_node != nothing
+    rules = Dict{Int64, Leaf}()
+    for i in 1:length(sorted)
+      if sorted[i][1] == exploding_node && sorted[i][2] == 4
+        rules[i] = Leaf(0)
+        for j in i+2:length(sorted)
+          if sorted[j][1] isa Leaf
+            rules[j] = Leaf(sorted[j][1].x + exploding_node.r.x)
+            break
+          end
+        end
+        for j in i-2:-1:1
+          if sorted[j][1] isa Leaf
+            rules[j] = Leaf(sorted[j][1].x + exploding_node.l.x)
+            break
+          end
+        end
+        break
+      end
+    end
+    return rewrite(A, 0, rules)[1]
+  end
+  A
+end
+
+function reduce(A::Node)
   prev = ""
   current = A
-  while current != prev
+  while !(current == prev)
     prev = current
     current = explode(current)
     if prev == current
@@ -134,7 +144,46 @@ function reduce(A)
   current
 end
 
-@assert reduce(add([[[[4,3],4],4],[7,[[8,4],9]]], [1,1])) == [[[[0,7],4],[[7,8],[6,0]]],[8,1]]
+@assert add(Node([1,2]), Node([[3,4],5])) == Node([[1,2],[[3,4],5]])
+
+@assert split(Node([[[[0,7],4],[15,[0,13]]],[1,1]]))[1] == Node([[[[0,7],4],[[7,8],[0,13]]],[1,1]])
+@assert split(Node([[[[0,7],4],[[7,8],[0,13]]],[1,1]]))[1] == Node([[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]])
+
+@assert magnitude(Node([[1,2],[[3,4],5]])) == 143
+@assert magnitude(Node([[[[0,7],4],[[7,8],[6,0]]],[8,1]])) == 1384
+@assert magnitude(Node([[[[1,1],[2,2]],[3,3]],[4,4]])) == 445
+@assert magnitude(Node([[[[3,0],[5,3]],[4,4]],[5,5]])) == 791
+@assert magnitude(Node([[[[5,0],[7,4]],[5,5]],[6,6]])) == 1137
+@assert magnitude(Node([[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]])) == 3488
+
+@assert explode(Node([[[[[9,8],1],2],3],4])) == Node([[[[0,9],2],3],4])
+@assert explode(Node([7,[6,[5,[4,[3,2]]]]])) == Node([7,[6,[5,[7,0]]]])
+@assert explode(Node([[6,[5,[4,[3,2]]]],1])) == Node([[6,[5,[7,0]]],3])
+@assert explode(Node([[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]])) == Node([[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]])
+@assert explode(Node([[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]])) == Node([[3,[2,[8,0]]],[9,[5,[7,0]]]])
+
+@assert reduce(add(Node([[[[4,3],4],4],[7,[[8,4],9]]]), Node([1,1]))) == Node([[[[0,7],4],[[7,8],[6,0]]],[8,1]])
+@assert reduce(add(
+                   Node([[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]),
+                   Node([7,[[[3,7],[4,3]],[[6,3],[8,8]]]]))
+              ) == Node([[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]])
+
+@assert reduce(add(
+                   Node([[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]),
+                   Node([[2,[[0,8],[3,4]]],[[[6,7],1],[7,[1,6]]]]))
+              ) == Node([[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]])
+@assert reduce(add(
+                   Node([[[[6,7],[6,7]],[[7,7],[0,7]]],[[[8,7],[7,7]],[[8,8],[8,0]]]]),
+                   Node([[[[2,4],7],[6,[0,5]]],[[[6,8],[2,8]],[[2,1],[4,5]]]]))
+              ) == Node([[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]])
+@assert reduce(add(
+                   Node([[[[7,0],[7,7]],[[7,7],[7,8]]],[[[7,7],[8,8]],[[7,7],[8,7]]]]),
+                   Node([7,[5,[[3,8],[1,4]]]]))
+              ) == Node([[[[7,7],[7,8]],[[9,5],[8,7]]],[[[6,8],[0,8]],[[9,9],[9,0]]]])
+@assert reduce(add(
+                   Node([[[[7,7],[7,8]],[[9,5],[8,7]]],[[[6,8],[0,8]],[[9,9],[9,0]]]]),
+                   Node([[2,[2,2]],[8,[8,1]]]))
+              ) == Node([[[[6,6],[6,6]],[[6,0],[6,7]]],[[[7,7],[8,9]],[8,[8,1]]]])
 
 function problem1(A)
   out = A[1]
@@ -153,6 +202,12 @@ function problem2(A)
   end
   maximum(magnitudes)
 end
+
+function load(file)
+  lines = readlines(file)
+  map(x->Node(eval(Meta.parse(x))), lines)
+end
+
 
 if abspath(PROGRAM_FILE) == @__FILE__
   A = load("test.txt")
