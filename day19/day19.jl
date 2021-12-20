@@ -1,5 +1,7 @@
 using Combinatorics, LinearAlgebra
 
+using Profile
+
 mutable struct Scanner
   x::Int64
   y::Int64
@@ -27,7 +29,7 @@ function load(file)
 end
 
 function sort_on_x(A)
-  sortslices(A,dims=1,by=x->(x[1], x[2], x[3]),rev=false)
+  sortslices(A,dims=2,by=x->(x[1], x[2], x[3]),rev=false)
 end
 
 function rotate_beacons(beacons, x, y, z)
@@ -67,10 +69,13 @@ function match_scanners(s1, s2)
       for i in 1:size(s1.beacons)[1]
         push!(O, s1.beacons[i,:]' .- B)
       end
-      O = sort_on_x(vcat(O...))
-      for i in 1:size(O)[1] - 11
-        if all(O[i,:] .== O[i + 11,:])
-          return true, (O[i,:])..., x, y, z
+      O = vcat(O...)'
+      O = sort_on_x(O)
+      O = O
+      N = size(O)[2]
+      for i in 1:N - 11
+        if O[1, i] == O[1, i + 11] && O[2, i] == O[2, i + 11] && O[3, i] == O[3, i + 11]
+          return true, O[1, i], O[2, i], O[3, i], x, y, z
         end
       end
     end
@@ -160,6 +165,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
   @assert problem2(B) == 3621
 
   A = load("input.txt")
+  @profile problem1(A)
+  Profile.print()
   N, B = problem1(A)
   println(N)
   println(problem2(B))
