@@ -53,59 +53,81 @@ function problem1(start1, start2)
   game(start1, start2, DetDie())
 end
 
-function update_player(p::Player, roll::Int64)
-  new_pos = p.position + roll
-  while new_pos > 10
-    new_pos -= 10
-  end
-  new_score = p.score + new_pos
-  Player(new_pos, new_score)
+T = Int64
+
+struct Board
+  pos1::T
+  score1::T
+  pos2::T
+  score2::T
+  turn::T
 end
 
-function memoize(key, wins, memo)
-  memo[key] = wins
+function update_board(board, roll::T)
+  if board.turn == T(0)
+    new_pos = board.pos1 + roll
+    new_pos = new_pos > T(10) ? new_pos - T(10) : new_pos
+    new_score = board.score1 + new_pos
+    return Board(new_pos, new_score, board.pos2, board.score2, T(1))
+  else
+    new_pos = board.pos2 + roll
+    new_pos = new_pos > T(10) ? new_pos - T(10) : new_pos
+    new_score = board.score2 + new_pos
+    return Board(board.pos1, board.score1, new_pos, new_score, T(0))
+  end
+end
+
+function memoize(board, wins, memo)
+  memo[board] = wins
   wins
 end
 
-const rolls = reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3])
+const rolls = T.(reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3]))
 
-function play(p1::Player, p2::Player, score, turn, memo)
-  key = (p1.position, p1.score, p2.position, p2.score, turn)
-  key2 = (p2.position, p2.score, p1.position, p1.score, (turn + 1)%2)
-  if key in keys(memo)
-    return memo[key]
-  elseif key2 in keys(memo)
-    return reverse(memo[key2])
+const K = 0x517cc1b727220a95;
+
+function fxhash(a::T, h::UInt)
+  xor(rotate(h, -5),a) * K
+end
+
+Base.hash(a::Board, h::UInt) = hash((a.pos1, a.score1, a.pos2, a.score2, a.turn), h)#foldl(fxhash, a, h)
+
+const score = T(21)
+
+function play(board, memo)
+  #board2 = (board[3], board[4], board[1], board[2], T((board[1] + 1) % 2))
+  if board in keys(memo)
+    return memo[board]
+  #elseif board2 in keys(memo)
+  #  return reverse(memo[board2])
   end
-  if p1.score >= score
-    return memoize(key, [1, 0], memo)
-  elseif p2.score >= score
-    return memoize(key, [0, 1], memo)
+  if board.score1 >= score
+    return memoize(board, [1, 0], memo)
+  elseif board.score2 >= score
+    return memoize(board, [0, 1], memo)
   end
   wins = [0, 0]
-  if turn == 0
-    for roll in rolls
-      wins .+= play(update_player(p1, roll), p2, score, 1, memo)
-    end
-  else
-    for roll in rolls
-      wins .+= play(p1, update_player(p2, roll), score, 0, memo)
-    end
+  for roll in rolls
+    wins .+= play(update_board(board, roll), memo)
   end
-  memoize(key, wins, memo)
+  memoize(board, wins, memo)
 end
 
 function problem2(start1, start2)
-  p1 = Player(start1)
-  p2 = Player(start2)
-  memo = Dict{Tuple{Int64, Int64, Int64, Int64, Int64}, Array{Int64, 1}}()
-  maximum(play(p1, p2, 21, 0, memo))
+  memo = Dict{Board, Array{Int64, 1}}()
+  maximum(play(Board(T(start1), T(0), T(start2), T(0), T(0)), memo))
 end
 
+using Profile
+Profile.init(n = 10^7, delay = 0.0001)
+using BenchmarkTools
 if abspath(PROGRAM_FILE) == @__FILE__
   @assert problem1(4, 8) == 739785
   @assert problem2(4, 8) == 444356092776315
 
   println(problem1(6, 4))
   println(problem2(6, 4))
+  @profile(problem2(6, 4))
+  Profile.print(format=:flat)
+  display(@benchmark problem2(6, 4))
 end
