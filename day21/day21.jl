@@ -62,21 +62,22 @@ function update_player(p::Player, roll::Int64)
   Player(new_pos, new_score)
 end
 
-function memoize(p1::Player, p2::Player, turn, wins, memo)
-  memo[[p1.position, p1.score, p2.position, p2.score, turn]] = wins
+function memoize(key, wins, memo)
+  memo[key] = wins
   wins
 end
 
 const rolls = reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3])
 
 function play(p1::Player, p2::Player, score, turn, memo)
-  if [p1.position, p1.score, p2.position, p2.score, turn] in keys(memo)
-    return memo[[p1.position, p1.score, p2.position, p2.score, turn]]
+  key = (p1.position, p1.score, p2.position, p2.score, turn)
+  if key in keys(memo)
+    return memo[key]
   end
   if p1.score >= score
-    return memoize(p1, p2, turn, [1, 0], memo)
+    return memoize(key, [1, 0], memo)
   elseif p2.score >= score
-    return memoize(p1, p2, turn, [0, 1], memo)
+    return memoize(key, [0, 1], memo)
   end
   wins = [0, 0]
   if turn == 0
@@ -88,13 +89,13 @@ function play(p1::Player, p2::Player, score, turn, memo)
       wins .+= play(p1, update_player(p2, roll), score, 0, memo)
     end
   end
-  memoize(p1, p2, turn, wins, memo)
+  memoize(key, wins, memo)
 end
 
 function problem2(start1, start2)
   p1 = Player(start1)
   p2 = Player(start2)
-  memo = Dict{Array{Int64, 1}, Array{Int64, 1}}()
+  memo = Dict{Tuple{Int64, Int64, Int64, Int64, Int64}, Array{Int64, 1}}()
   maximum(play(p1, p2, 21, 0, memo))
 end
 
