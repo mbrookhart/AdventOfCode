@@ -71,8 +71,11 @@ const rolls = reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3])
 
 function play(p1::Player, p2::Player, score, turn, memo)
   key = (p1.position, p1.score, p2.position, p2.score, turn)
+  key2 = (p2.position, p2.score, p1.position, p1.score, (turn + 1)%2)
   if key in keys(memo)
     return memo[key]
+  elseif key2 in keys(memo)
+    return reverse(memo[key2])
   end
   if p1.score >= score
     return memoize(key, [1, 0], memo)
