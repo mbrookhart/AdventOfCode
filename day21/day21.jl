@@ -98,20 +98,10 @@ function problem2(start1, start2)
   maximum(play(p1, p2, 21, 0, memo))
 end
 
-function load(file)
-  lines = readlines(file)
-  im_2_bin = x->x == '.' ? 0 : 1
-  instructions = map(im_2_bin, collect(lines[1]))
-  image = hcat(map(line->map(im_2_bin, collect(line)), lines[3:end])...)'
-  instructions, image
-end
-
 if abspath(PROGRAM_FILE) == @__FILE__
-  A = load("test.txt")
   @assert problem1(4, 8) == 739785
   @assert problem2(4, 8) == 444356092776315
 
-  #B = load("input.txt")
   println(problem1(6, 4))
   println(problem2(6, 4))
 end
