@@ -54,7 +54,7 @@ function problem1(start1, start2)
 end
 
 
-const rolls = reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3])
+const rolls = Dict(3=>1, 4=>3, 5=>6, 6=>7, 7=>6, 8=>3, 9=>1)
 const score = 21
 
 struct Board
@@ -89,7 +89,7 @@ function fxhash(a, h::UInt)
 end
 
 function Base.hash(a::Board, h::UInt)
-    fxhash(a.pos1,
+  fxhash(a.pos1,
          fxhash(a.score1,
                 fxhash(a.pos2,
                        fxhash(a.score2,
@@ -114,9 +114,9 @@ function play(board, memo)
     return memoize(board, (0, 1), memo)
   end
   wins = (0, 0)
-  for roll in rolls
+  for roll in keys(rolls)
     tmp = play(update_board(board, roll), memo)
-    wins = (wins[1] + tmp[1], wins[2] + tmp[2])
+    wins = (wins[1] + rolls[roll] * tmp[1], wins[2] + rolls[roll] * tmp[2])
   end
   memoize(board, wins, memo)
 end
@@ -125,6 +125,7 @@ function problem2(start1, start2)
   memo = Dict{Board, NTuple{2, Int64}}()
   maximum(play(Board(start1, 0, start2, 0, 0), memo))
 end
+
 
 if abspath(PROGRAM_FILE) == @__FILE__
   @assert problem1(4, 8) == 739785
