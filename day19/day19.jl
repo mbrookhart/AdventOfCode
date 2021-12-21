@@ -28,10 +28,6 @@ function load(file)
   scanners
 end
 
-function sort_on_x(A)
-  sortslices(A,dims=2,by=x->(x[1], x[2], x[3]),rev=false)
-end
-
 function rotate_beacons(beacons, x, y, z)
   B = zeros(Int64, size(beacons))
   B[:, 1] = sign(x) .* beacons[:, abs(x)]
@@ -70,8 +66,7 @@ function match_scanners(s1, s2)
         push!(O, s1.beacons[i,:]' .- B)
       end
       O = vcat(O...)'
-      O = sort_on_x(O)
-      O = O
+      O = sortslices(O,dims=2,by=x->(x[1], x[2], x[3]),rev=false)
       N = size(O)[2]
       for i in 1:N - 11
         if O[1, i] == O[1, i + 11] && O[2, i] == O[2, i + 11] && O[3, i] == O[3, i + 11]
@@ -166,7 +161,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
   A = load("input.txt")
   @profile problem1(A)
-  Profile.print()
+  Profile.print(maxdepth=4)
   N, B = problem1(A)
   println(N)
   println(problem2(B))
