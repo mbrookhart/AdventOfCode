@@ -53,27 +53,27 @@ function problem1(start1, start2)
   game(start1, start2, DetDie())
 end
 
-T = Int64
+
+const rolls = reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3])
+const score = 21
 
 struct Board
-  pos1::T
-  score1::T
-  pos2::T
-  score2::T
-  turn::T
+  pos1::Int64
+  score1::Int64
+  pos2::Int64
+  score2::Int64
+  turn::Int64
 end
 
-function update_board(board, roll::T)
-  if board.turn == T(0)
-    new_pos = board.pos1 + roll
-    new_pos = new_pos > T(10) ? new_pos - T(10) : new_pos
+function update_board(board, roll)
+  if board.turn == 0
+    new_pos = (board.pos1 + roll - 1) % 10 + 1
     new_score = board.score1 + new_pos
-    return Board(new_pos, new_score, board.pos2, board.score2, T(1))
+    return Board(new_pos, new_score, board.pos2, board.score2, 1)
   else
-    new_pos = board.pos2 + roll
-    new_pos = new_pos > T(10) ? new_pos - T(10) : new_pos
+    new_pos = (board.pos2 + roll - 1) % 10 + 1
     new_score = board.score2 + new_pos
-    return Board(board.pos1, board.score1, new_pos, new_score, T(0))
+    return Board(board.pos1, board.score1, new_pos, new_score, 0)
   end
 end
 
@@ -82,52 +82,54 @@ function memoize(board, wins, memo)
   wins
 end
 
-const rolls = T.(reduce(vcat, [i + j + k for i in 1:3, j in 1:3, k in 1:3]))
-
 const K = 0x517cc1b727220a95;
 
-function fxhash(a::T, h::UInt)
-  xor(rotate(h, -5),a) * K
+function fxhash(a, h::UInt)
+  xor(bitrotate(h, -5), a) * K
 end
 
-Base.hash(a::Board, h::UInt) = hash((a.pos1, a.score1, a.pos2, a.score2, a.turn), h)#foldl(fxhash, a, h)
-
-const score = T(21)
+function Base.hash(a::Board, h::UInt)
+    fxhash(a.pos1,
+         fxhash(a.score1,
+                fxhash(a.pos2,
+                       fxhash(a.score2,
+                              fxhash(a.turn, h)
+                             )
+                      )
+               )
+        )
+end
 
 function play(board, memo)
-  #board2 = (board[3], board[4], board[1], board[2], T((board[1] + 1) % 2))
-  if board in keys(memo)
+  board2 = Board(board.pos2, board.score2, board.pos1, board.score1, (board.turn + 1) % 2)
+  if haskey(memo, board)
     return memo[board]
-  #elseif board2 in keys(memo)
-  #  return reverse(memo[board2])
+  elseif haskey(memo, board2)
+    tmp = memo[board2]
+    return (tmp[2], tmp[1])
   end
   if board.score1 >= score
-    return memoize(board, [1, 0], memo)
+    return memoize(board, (1, 0), memo)
   elseif board.score2 >= score
-    return memoize(board, [0, 1], memo)
+    return memoize(board, (0, 1), memo)
   end
-  wins = [0, 0]
+  wins = (0, 0)
   for roll in rolls
-    wins .+= play(update_board(board, roll), memo)
+    tmp = play(update_board(board, roll), memo)
+    wins = (wins[1] + tmp[1], wins[2] + tmp[2])
   end
   memoize(board, wins, memo)
 end
 
 function problem2(start1, start2)
-  memo = Dict{Board, Array{Int64, 1}}()
-  maximum(play(Board(T(start1), T(0), T(start2), T(0), T(0)), memo))
+  memo = Dict{Board, NTuple{2, Int64}}()
+  maximum(play(Board(start1, 0, start2, 0, 0), memo))
 end
 
-using Profile
-Profile.init(n = 10^7, delay = 0.0001)
-using BenchmarkTools
 if abspath(PROGRAM_FILE) == @__FILE__
   @assert problem1(4, 8) == 739785
   @assert problem2(4, 8) == 444356092776315
 
   println(problem1(6, 4))
   println(problem2(6, 4))
-  @profile(problem2(6, 4))
-  Profile.print(format=:flat)
-  display(@benchmark problem2(6, 4))
 end
