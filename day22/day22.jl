@@ -30,7 +30,13 @@ function run_sim(instructions)
     cubes[x_ind[i.x1]:(x_ind[i.x2 + 1] - 1), y_ind[i.y1]:(y_ind[i.y2 + 1] - 1), z_ind[i.z1]:(z_ind[i.z2 + 1] - 1)] .= i.on
   end
   # perform the sum by multiplying the on/off state by the nubmer of cubes in each cell
-  sum(cubes[1:end-1, 1:end-1, 1:end-1] .* (diff(xs) .* diff(ys)' .* reshape(diff(zs), 1, 1, :)))
+  zd = diff(zs)
+  xy = (diff(xs) .* diff(ys)')
+  total = 0
+  for z in 1:size(cubes)[3] - 1
+    total += zd[z] * sum(cubes[1:end-1, 1:end-1, z] .* xy)
+  end
+  total
 end
 
 function problem1(instructions)
@@ -67,17 +73,13 @@ function load(file)
   out
 end
 
-using Profile
-using BenchmarkTools
 if abspath(PROGRAM_FILE) == @__FILE__
   A = load("test.txt")
   @assert problem1(A) == 590784
   A = load("test2.txt")
   @assert problem2(A) == 2758514936282235
+  
   A = load("input.txt")
   println(problem1(A))
-  #@profile problem2(A)
-  #Profile.print(format=:flat)
-  #display(@benchmark problem2(A))
   println(problem2(A))
 end
