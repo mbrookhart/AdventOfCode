@@ -1,3 +1,6 @@
+T = Int32
+one = T(1)
+
 function get_limits(instructions)
   # We're going to generate a dense grid where each cell in the grid
   # represents a range of cubes in real space
@@ -6,9 +9,9 @@ function get_limits(instructions)
   # want each cell in our grid to represent x1->x2 inclusive,
   # and making the next cell start on x2 means we have double counting
   # of cells
-  xs = sort(mapreduce(i->[i.x1, i.x2 + 1], vcat, instructions))
-  ys = sort(mapreduce(i->[i.y1, i.y2 + 1], vcat, instructions))
-  zs = sort(mapreduce(i->[i.z1, i.z2 + 1], vcat, instructions))
+  xs = sort(mapreduce(i->[i.x1, i.x2 + one], vcat, instructions))
+  ys = sort(mapreduce(i->[i.y1, i.y2 + one], vcat, instructions))
+  zs = sort(mapreduce(i->[i.z1, i.z2 + one], vcat, instructions))
   unique(xs), unique(ys), unique(zs)
 end
 
@@ -48,7 +51,7 @@ function problem2(instructions)
   run_sim(instructions)
 end
 
-struct Instruction{T}
+struct Instruction
   on::UInt8
   x1::T
   x2::T
@@ -65,9 +68,9 @@ function load(file)
     tmp = split(line, " ")
     on = UInt8(tmp[1] == "on")
     x, y, z = split(tmp[2], ",")
-    x1, x2 = parse.(Int32, split(split(x, "=")[2], ".."))
-    y1, y2 = parse.(Int32, split(split(y, "=")[2], ".."))
-    z1, z2 = parse.(Int32, split(split(z, "=")[2], ".."))
+    x1, x2 = parse.(T, split(split(x, "=")[2], ".."))
+    y1, y2 = parse.(T, split(split(y, "=")[2], ".."))
+    z1, z2 = parse.(T, split(split(z, "=")[2], ".."))
     push!(out, Instruction(on, x1, x2, y1, y2, z1, z2))
   end
   out
