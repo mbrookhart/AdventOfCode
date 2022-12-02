@@ -1,7 +1,7 @@
 module day01
 
-using .InlineTest
-using .Match
+using InlineTest
+using Match
 const TEST_STRING = """1000
 2000
 3000
