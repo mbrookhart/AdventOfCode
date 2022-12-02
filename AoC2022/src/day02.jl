@@ -15,12 +15,17 @@ C Z"""
 end
 
 @enum Moves Rock=1 Paper=2 Sissors=3
+const beats = Dict(Rock=>Paper, Paper=>Sissors, Sissors=>Rock)
+const ties = Dict(Rock=>Rock, Paper=>Paper, Sissors=>Sissors)
+const loses = Dict(Rock=>Sissors, Paper=>Rock, Sissors=>Paper)
+const predict_moves = Dict(Rock=>loses, Paper=>ties, Sissors=>beats)
+
 
 function win_score(x, y)
   val = 0
   if x == y
     val = 1
-  elseif (Int(y) - Int(x) == 1) || (Int(x) - Int(y) == 2)
+  elseif beats[x] == y 
     val = 2
   end
   val * 3
@@ -51,11 +56,6 @@ end
 function problem1(A)
   sum(score.(A))
 end
-
-const beats = Dict(Rock=>Paper, Paper=>Sissors, Sissors=>Rock)
-const ties = Dict(Rock=>Rock, Paper=>Paper, Sissors=>Sissors)
-const loses = Dict(Rock=>Sissors, Paper=>Rock, Sissors=>Paper)
-const predict_moves = Dict(Rock=>loses, Paper=>ties, Sissors=>beats)
 
 function predict_move(move)
   predict_moves[move[2]][move[1]]
