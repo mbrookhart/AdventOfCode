@@ -1,6 +1,7 @@
 module day01
 
-using .InlineTest
+using InlineTest
+using Match
 const TEST_STRING = """1000
 2000
 3000
@@ -24,16 +25,12 @@ end
 Elf = Array{Int64, 1}
 
 function load(file)
-  lines = readlines(file)
-  elves = Array{Elf, 1}()
-  push!(elves, Elf())
-  for i in 1:length(lines)
-    if lines[i] == ""
-      push!(elves, Elf())
-    else
-      push!(last(elves), parse(Int64, lines[i]))
-    end
+  elves = Array{Elf, 1}(Elf(), 1)
+  parse_line(line) = @match line begin
+    "" => push!(elves, Elf())
+    _ => push!(last(elves), parse(Int64, line))
   end
+  parse_line.(readlines(file))
   elves
 end
 
