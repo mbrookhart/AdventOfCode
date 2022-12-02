@@ -1,7 +1,7 @@
 module day01
 
-using InlineTest
-using Match
+using .InlineTest
+using .Match
 const TEST_STRING = """1000
 2000
 3000
@@ -22,10 +22,11 @@ const TEST_STRING = """1000
   @test solve(IOBuffer(TEST_STRING)) == (24000, 45000)
 end
 
-Elf = Array{Int64, 1}
+Elf = Vector{Int64}
 
 function load(file)
-  elves = Array{Elf, 1}(Elf(), 1)
+  elves = Vector{Elf}()
+  push!(elves, Elf())
   parse_line(line) = @match line begin
     "" => push!(elves, Elf())
     _ => push!(last(elves), parse(Int64, line))
