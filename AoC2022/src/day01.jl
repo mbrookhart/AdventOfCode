@@ -1,9 +1,30 @@
+module day01
+
+using .InlineTest
+const TEST_STRING = """1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000"""
+
+
+@testset "day01" begin
+  @test solve(IOBuffer(TEST_STRING)) == (24000, 45000)
+end
+
 Elf = Array{Int64, 1}
 
 function load(file)
   lines = readlines(file)
-  println(parse.(Int64, lines))
-  println(split(lines, ""))
   elves = Array{Elf, 1}()
   push!(elves, Elf())
   for i in 1:length(lines)
@@ -13,7 +34,7 @@ function load(file)
       push!(last(elves), parse(Int64, lines[i]))
     end
   end
-  return elves
+  elves
 end
 
 function problem1(A)
@@ -21,17 +42,12 @@ function problem1(A)
 end
 
 function problem2(A)
-  totals = sum.(A)
-  top = sort(totals, rev=true)[1:3]
-  sum(top)
+  sum(sort(sum.(A), rev=true)[1:3])
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
-  A = load("test.txt")
-  @assert problem1(A) == 24000
-  @assert problem2(A) == 45000
+function solve(io::IO)
+  A = load(io)
+  problem1(A), problem2(A)
+end
 
-  A = load("input.txt")
-  println(problem1(A))
-  println(problem2(A))
 end

@@ -1,0 +1,18 @@
+name = "AoC2022"
+uuid = "cacef250-4369-4593-ba67-1aed915e1572"
+authors = ["Matthew Brookhart <matthewbrookhart@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+InlineTest = "bd334432-b1e7-49c7-a2dc-dd9149e4ebd6"
+
+[compat]
+julia = "1.8"
+InlineTest = "0.2"
+ReTest = "0.3"
+
+[extras]
+ReTest = "e0db7c4e-2690-44b9-bad6-7687da720f89"
+
+[targets]
+test = ["ReTest"]
