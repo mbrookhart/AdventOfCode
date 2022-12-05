@@ -9,7 +9,7 @@ ttgJtRGJQctTZtZT
 CrZsJsPPZsGzwwsLwLmpwMDw"""
 
 
-@testset "day02" begin
+@testset "day03" begin
   @test solve(IOBuffer(TEST_STRING)) == (
     157,
     70

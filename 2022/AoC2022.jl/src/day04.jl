@@ -10,7 +10,7 @@ const TEST_STRING = """2-4,6-8
 2-6,4-8"""
 
 
-@testset "day02" begin
+@testset "day04" begin
   @test solve(IOBuffer(TEST_STRING)) == (
     2,
     4
@@ -58,10 +58,10 @@ end
 
 function solve(io::IO)
   A = load(io)
-  println((
+  (
     problem1(A), 
     problem2(A)
-  ))
+  )
 end
 
 end
