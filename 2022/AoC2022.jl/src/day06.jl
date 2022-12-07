@@ -3,7 +3,6 @@ module day06
 using InlineTest
 using DataStructures
 using BenchmarkTools
-using Profile
 
 @testset "day06" begin
   @test problem1(load(IOBuffer("""bvwbjplbgvbhsrlpgdmjqwftvncz"""))) == 5
@@ -18,24 +17,27 @@ using Profile
 end
 
 function load(file)
+  T = Int32
   line = readlines(file)[1]
-  Int32.(collect(line)) .- (Int32('a') - 1)
+  T.(collect(line)) .- (T('a') - T(1))
 end
 
-function find_unique_start(A, len)
-  tmp = zeros(Int32, 26)
+function find_unique_start(A::Vector{T}, len) where {T}
+  tmp = zeros(T, 26)
+  for i in 1:len-1
+    tmp[A[i]] += T(1)
+  end
+  s = sum(tmp .> T(0))
   for i in len:length(A)
-    for j in i-len+1:i
-      tmp[A[j]] += 1
-    end
-    s = 0
-    for j in 1:26
-      s += min(tmp[j], 1)
-    end
+    curr = A[i]
+    tmp[curr] += T(1)
+    s = tmp[curr] == T(1) ? s + T(1) : s
     if s == len
       return i
     end
-    tmp .= 0
+    prev = A[i-len+1]
+    tmp[prev] -= T(1)
+    s = tmp[prev] == T(0) ? s - T(1) : s
   end
   return -1
 end
@@ -51,12 +53,6 @@ end
 function solve(io::IO)
   A = load(io)
   @btime problem2($A)
-  @time problem2(A)
-  Profile.init(delay = 2e-6)
-  @profile problem2(A)
-
-  Profile.print()
-
   (
     problem1(A), 
     problem2(A)

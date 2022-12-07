@@ -4,9 +4,11 @@ authors = ["Matthew Brookhart <matthewbrookhart@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 InlineTest = "bd334432-b1e7-49c7-a2dc-dd9149e4ebd6"
 Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
+Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
 [compat]
 InlineTest = "0.2"
