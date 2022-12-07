@@ -21,16 +21,9 @@ function load(file)
 end
 
 function find_unique_start(A, len)
-  tmp = Queue{Char}()
-  for i in 1:len
-    enqueue!(tmp, A[i])
-  end
-  for i in len+1:length(A)
-    if length(unique(tmp)) == len
-      return i - 1
-    else
-      enqueue!(tmp, A[i]) 
-      dequeue!(tmp)
+  for i in len:length(A)
+    if length(unique(A[i-len+1:i])) == len
+      return i
     end
   end
   return -1
