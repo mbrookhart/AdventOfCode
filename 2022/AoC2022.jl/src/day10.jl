@@ -7,7 +7,12 @@ using Match
 @testset "day10" begin
   @test solve(open("../data/day10.test")) == (
     13140,
-    nothing
+    """##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######....."""
   )
 end
 
@@ -25,7 +30,6 @@ end
 
 function execute_program(insts, f)
   X = 1
-  sum = 0
   cycle = 1
   for inst in insts
     nc, update = execute_inst(inst...)
@@ -59,9 +63,12 @@ function problem2(insts)
     end
   end
   execute_program(insts, CRT_update)
+  s=""
   for i in 1:6
-    println(join(CRT[i,:]))
+    s = s * join(CRT[i,:]) * "\n"
   end
+  println(s)
+  chop(s)
 end
 
 function solve(io::IO)
