@@ -90,7 +90,6 @@ function toss(monkeys, N, divisor)
   monkeys[1].n_inspections * monkeys[2].n_inspections
 end
 
-
 problem1(monkeys) = toss(monkeys, 20, 3)
 problem2(monkeys) = toss(monkeys, 10000, 1)
 
