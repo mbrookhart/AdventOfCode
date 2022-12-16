@@ -2,20 +2,23 @@ module day16
 
 using InlineTest
 using DataStructures
+using BenchmarkTools
+using Profile
 
 @testset "day16" begin
-  @test problem1(load(open("../data/day16.test"))) == 1651
-  @test problem2(load(open("../data/day15.test")), 20) == 1707
+  @test solve(open("../data/day16.test")) == (1651, 1707)
 end
 
 re_valve = r"Valve (?<valve>\w+)"
 re_rate = r"rate=(?<flow>\d+)"
 function load(file)
   lines = readlines(file)
+  codes = Dict{String, Int}()
   rates = Dict{String, Int}()
   tunnels = Dict{String, Vector{String}}()
-  for line in lines
+  for (i,line) in enumerate(lines)
     name = match(re_valve, line)[:valve]
+    codes[name] = i
     flow = parse(Int, match(re_rate, line)[:flow])
     ts = split(line, "valve")[2]
     if startswith(ts, "s")
@@ -25,7 +28,7 @@ function load(file)
     rates[name] = flow
     tunnels[name] = t
   end
-  rates, tunnels
+  codes, Dict(codes[k]=>v for (k,v) in rates), Dict(codes[k]=>[codes[i] for i in v] for (k,v) in tunnels)
 end
 
 struct Pathfinder{K,T}
@@ -66,17 +69,15 @@ function Astar(p::Pathfinder)
   end
 end
 
-
 get_new_cost(p, current, next) = p.cost[current] + 1
-
 generate_moves(p, current) = p.map[2][current]
-
 heuristic(p, next) = 0
 
-key(start, stop) = start * "=>" * stop
+@inline key(start, stop) = (start, stop)#string(start) * "=>" * string(stop)
+@inline key(room, time, valves) = (room, time, valves)
 
-function generate_distances(rates, tunnels)
-  out = Dict{String, Int}()
+function generate_distances(rates::Dict{T, Int}, tunnels::Dict{T, Vector{T}}) where {T}
+  out = Dict{Tuple{T, T}, Int}()
   for start in keys(tunnels)
     for stop in keys(tunnels)
       p = Pathfinder((rates, tunnels), start, stop)
@@ -87,40 +88,114 @@ function generate_distances(rates, tunnels)
   out
 end
 
+const K = 0x517cc1b727220a95;
 
-function traverse(rates, distances, room::String, valves, time=30)
-  rate = 0
-  if time > 0
-    if room in valves
-      pop!(valves, room)
-      time = time - 1
-      rate += time * rates[room]
-    end
-    rs = Vector{Int}()
-    for valve in valves
-      time_at_valve = time - distances[key(room, valve)]
-      push!(rs, traverse(rates, distances, valve, copy(valves), time_at_valve))
-    end
-    rate += maximum(rs, init=0)
+function fxhash(a, h::UInt)
+  xor(bitrotate(h, -5), a) * K 
+end
+
+function Base.hash(a::Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Set{Int}}, h0::UInt)
+  h1=fxhash(a[1][1], h0)
+  h2=fxhash(a[1][2], h1)
+  h3=fxhash(a[2][1], h2)
+  ho=fxhash(a[2][2], h3)
+  for v in a[3]
+    ho = fxhash(v, ho)
   end
+  ho
+end
+
+function Base.hash(a::Tuple{Int, Int, Set{Int}}, h0::UInt)
+  h1=fxhash(a[1], h0)
+  ho=fxhash(a[2], h1)
+  for v in a[3]
+    ho = fxhash(v, ho)
+  end
+  ho
+end
+
+function traverse(rates, distances, memo, room::T, valves, time=30) where {T}
+  key1 = key(room, time, valves)
+  val = get(memo, key1, nothing)
+  if val != nothing 
+    return val
+  end
+  rate = 0
+  if room in valves
+    # Open valve
+    valves = copy(valves)
+    pop!(valves, room)
+    time = time - 1
+    rate += time * rates[room]
+  end
+  rs = Vector{Int}()
+  for valve in valves
+    # Move to new room based on pre-calcualted distance
+    time_at_valve = time - distances[key(room, valve)]
+    if time_at_valve > 0
+      push!(rs, traverse(rates, distances, memo, valve, valves, time_at_valve))
+    end
+  end
+  rate += maximum(rs, init=0)
+  memo[key1] = rate
+  rate
+end
+
+function traverse(rates, distances, memo, rooms::Tuple{T, T}, valves, times=(26, 26)) where {T}
+  key1 = key(rooms, times, valves)
+  key2 = key(reverse(rooms), reverse(times), valves)
+  val = get(memo, key1, nothing)
+  if val != nothing 
+    return val
+  end
+  val = get(memo, key2, nothing)
+  if val != nothing
+    return val
+  end
+  rate = 0
+  i = argmax(times)
+  j = i == 1 ? 2 : 1
+  time = times[i]
+  room = rooms[i]
+  rs = Vector{Int}()
+  for valve in valves
+    time_at_valve = time - distances[key(room, valve)]
+    if time_at_valve > 0
+      # open_valve when we arrive at the next location
+      new_valves = copy(valves)
+      pop!(new_valves, valve)
+      valve_pressure = (time_at_valve - 1) * rates[valve]
+      # Continue traversing from that state
+      push!(rs, valve_pressure + traverse(rates, distances, memo, (valve, rooms[j]), new_valves, (time_at_valve - 1, times[j])))
+    end
+  end
+  rate += maximum(rs, init=0)
+  memo[key1] = rate
+  memo[key2] = rate
   rate
 end
 
 function problem1(A)
-  rates, tunnels = A
+  codes, rates, tunnels = A
   distances = generate_distances(rates, tunnels)
   valves = Set(k for (k,v) in rates if v > 0)
-  traverse(rates, distances, "AA", valves)
+  memo = Dict{Tuple{Int, Int, Set{Int}}, Int}()
+  traverse(rates, distances, memo, codes["AA"], valves)
 end
 
 function problem2(A)
+  codes, rates, tunnels = A
+  distances = generate_distances(rates, tunnels)
+  valves = Set(k for (k,v) in rates if v > 0)
+  memo = Dict{Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Set{Int}}, Int}()
+  traverse(rates, distances, memo, (codes["AA"], codes["AA"]), valves)
 end
 
 function solve(io::IO)
   A = load(io)
   (
     problem1(A),
-    #problem2(A)
+    problem2(A)
   )
 end
 
