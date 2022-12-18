@@ -29,29 +29,31 @@ function get(s::Gusts)
   s.gusts[s.index]
 end
 
+T = Bool
+
 function gen_rocks()
-  rocks = Vector{Array{Int, 2}}()
+  rocks = Vector{SparseMatrixCSC{T, Int}}()
   # minus
-  tmp = zeros(Int, 1, 4)
+  tmp = spzeros(T, 1, 4)
   tmp[1, :] .= 1
   push!(rocks, tmp)
   # plus
-  tmp = zeros(Int, 3, 3)
+  tmp = spzeros(T, 3, 3)
   tmp[3, 2] = 1
   tmp[2, 1:3] .= 1
   tmp[1, 2] = 1
   push!(rocks, tmp)
   # angle
-  tmp = zeros(Int, 3, 3)
+  tmp = spzeros(T, 3, 3)
   tmp[1, 1:3] .= 1
   tmp[1:3, 3] .= 1
   push!(rocks, tmp)
   # l
-  tmp = zeros(Int, 4, 1)
+  tmp = spzeros(T, 4, 1)
   tmp[:, 1] .= 1
   push!(rocks, tmp)
   # square
-  tmp = zeros(Int, 2, 2)
+  tmp = spzeros(T, 2, 2)
   tmp[:,:] .= 1
   push!(rocks, tmp)
   rocks
@@ -59,31 +61,28 @@ end
 
 top_of_grid(grid) = findfirst(x->x==0,sum(grid, dims=2))[1] - 1
 
+function rock_hit(grid, rock, x, y)
+  h, w = size(rock)
+  x == 0 || sum(grid[x:x+h-1, y:y+w-1] .& rock) != 0
+end
+
 function drop_rock!(grid, rock, gusts)
   h, w = size(rock)
   x, y = top_of_grid(grid) + 4, 3
-  while true
+  while !rock_hit(grid, rock, x, y)
     ### Push the rock
     g = get(gusts)
     new_y = @match g begin
       '>' => y + w - 1 < 7 ? y + 1 : y
       '<' => y > 1 ? y - 1 : y
     end
-    ### Check if we hit a fallen rock, if so, negate push
-    if sum(grid[x:x+h-1, new_y:new_y+w-1] .& rock) != 0
-      new_y = y
-    end
-    y = new_y
-    ### Fall the rock
-    new_x = x - 1
-    ### Check if we landed
-    if new_x == 0 || sum(grid[new_x:new_x+h-1, y:y+w-1] .& rock) != 0
-      break
-    end
-    x = new_x
+    ### If we hit something in the gust, revert
+    y = rock_hit(grid, rock, x, new_y) ? y : new_y
+    ### Drop the rock
+    x = x - 1
   end
-  ## Mark the rock's final landing place
-  grid[x:x+h-1, y:y+w-1] = rock
+  ## Mark the rock's final landing place, adding 1 to x to revert the last drop
+  grid[x+1:x+h, y:y+w-1] .|= rock
 end
 
 function drop_rocks!(grid, rocks, gusts)
@@ -94,7 +93,7 @@ end
 
 function problem1(gusts)
   rocks = gen_rocks()
-  grid = spzeros(Int, 10000, 7)
+  grid = spzeros(T, 10000, 7)
   drop_rocks!(grid, rocks, gusts)
   top_of_grid(grid)
 end
