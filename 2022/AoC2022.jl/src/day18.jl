@@ -50,6 +50,7 @@ mutable struct Pathfinder{K,T}
   map::K # Problem map to pass into generation logic
   queue::PriorityQueue{T} # queue for Astar
   cost::Dict{T, Int} # cost for Astar
+  path::Dict{T, T} # path for Astar
   goal::T # goal for Astar
 end
 
@@ -57,8 +58,9 @@ function Pathfinder(map, start::T, goal::T, initial_cost=0) where {T}
   cost = Dict{T, Int}()
   cost[start] = initial_cost
   queue = PriorityQueue{T, Int}()
+  path = Dict{T, T}()
   enqueue!(queue, start, initial_cost)
-  Pathfinder(map, queue, cost, goal)
+  Pathfinder(map, queue, cost, path, goal)
 end
 
 function Astar(p::Pathfinder)
@@ -68,6 +70,9 @@ function Astar(p::Pathfinder)
       return false
     end
     for next in generate_moves(p, current)
+      if next in keys(p.map[2]) && !p.map[2][next]
+        return false
+      end
       new_cost = get_new_cost(p, current, next)
       if !(next in keys(p.cost)) || (new_cost < p.cost[next])
         p.cost[next] = new_cost
@@ -88,14 +93,14 @@ end
 get_new_cost(p, current, next) = p.cost[current] + 1
 
 function generate_moves(p, current) 
-  N, M, O = size(p.map)
+  N, M, O = size(p.map[1])
   inbounds(i, j, k) = i > 0 && i <= N && j > 0 && j <= M && k > 0 && k <= O
   i,j,k = current
   out = Vector{Cube{Int}}()
   for c in [(i-1, j, k),(i, j-1, k),
             (i, j, k-1),(i+1, j, k),
             (i, j+1, k),(i, j, k+1)]
-    if inbounds(c...) && p.map[c...] == 0
+    if inbounds(c...) && p.map[1][c...] == 0
       push!(out, c)
     end
   end
@@ -110,9 +115,11 @@ function clear!(q::PriorityQueue)
   end
 end
 
-function is_void(grid, i, j, k)
-  p = Pathfinder(grid, (i,j,k), (1,1,1))
-  Astar(p)
+function is_void(grid, memo, i, j, k)
+  p = Pathfinder((grid, memo), (i,j,k), (1,1,1))
+  b = Astar(p)
+  memo[(i,j,k)] = b
+  b
 end
 
 function problem2(A)
@@ -121,12 +128,12 @@ function problem2(A)
   for c in A
     grid[c...] = 1
   end
-
+  memo = Dict{Cube, Bool}()
   ec = Vector{Cube}()
   for k in 1:N
     for j in 1:N
       for i in 1:N
-        if grid[i, j, k] == 0 && is_void(grid, i, j, k)
+        if grid[i, j, k] == 0 && is_void(grid, memo, i, j, k)
           push!(ec, (i, j, k))
         end
       end
