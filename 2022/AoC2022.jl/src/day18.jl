@@ -11,9 +11,9 @@ using DataStructures
   )
 end
 
-Cube{T} = Vector{T}
+Cube{T} = Tuple{T, T, T}
 
-p(x) = Cube(parse.(Int, split(x, ",")) .+ 2)
+p(x) = Cube((parse.(Int, split(x, ",")) .+ 2))
 
 function load(file)
   p.(readlines(file))
@@ -28,13 +28,13 @@ function get_surface_area(cubes)
   surfaces = Dict{Cube, Vector{Int}}(c=>ones(Int, 6) for c in cubes)
   for i in 1:length(cubes)
     for j in i+1:length(cubes)
-      @match cubes[i] - cubes[j] begin
-        [ 1,  0,  0] => erase_surface!(surfaces, cubes, i, j, 1, 4)
-        [-1,  0,  0] => erase_surface!(surfaces, cubes, i, j, 4, 1)
-        [ 0,  1,  0] => erase_surface!(surfaces, cubes, i, j, 2, 5)
-        [ 0, -1,  0] => erase_surface!(surfaces, cubes, i, j, 5, 2)
-        [ 0,  0,  1] => erase_surface!(surfaces, cubes, i, j, 3, 6)
-        [ 0,  0, -1] => erase_surface!(surfaces, cubes, i, j, 6, 3)
+      @match cubes[i] .- cubes[j] begin
+        ( 1,  0,  0) => erase_surface!(surfaces, cubes, i, j, 1, 4)
+        (-1,  0,  0) => erase_surface!(surfaces, cubes, i, j, 4, 1)
+        ( 0,  1,  0) => erase_surface!(surfaces, cubes, i, j, 2, 5)
+        ( 0, -1,  0) => erase_surface!(surfaces, cubes, i, j, 5, 2)
+        ( 0,  0,  1) => erase_surface!(surfaces, cubes, i, j, 3, 6)
+        ( 0,  0, -1) => erase_surface!(surfaces, cubes, i, j, 6, 3)
       end
     end
   end
@@ -91,10 +91,10 @@ function generate_moves(p, current)
   N, M, O = size(p.map)
   inbounds(i, j, k) = i > 0 && i <= N && j > 0 && j <= M && k > 0 && k <= O
   i,j,k = current
-  out = Vector{Vector{Int}}()
-  for c in [[i-1, j, k],[i, j-1, k],
-            [i, j, k-1],[i+1, j, k],
-            [i, j+1, k],[i, j, k+1]]
+  out = Vector{Cube{Int}}()
+  for c in [(i-1, j, k),(i, j-1, k),
+            (i, j, k-1),(i+1, j, k),
+            (i, j+1, k),(i, j, k+1)]
     if inbounds(c...) && p.map[c...] == 0
       push!(out, c)
     end
@@ -111,13 +111,13 @@ function clear!(q::PriorityQueue)
 end
 
 function is_void(grid, i, j, k)
-  p = Pathfinder(grid, [i,j,k], [1,1,1])
+  p = Pathfinder(grid, (i,j,k), (1,1,1))
   Astar(p)
 end
 
 function problem2(A)
   N = maximum(maximum.(A)) + 1
-  grid = zeros(Bool, N, N, N)
+  grid = zeros(Int, N, N, N)
   for c in A
     grid[c...] = 1
   end
@@ -127,7 +127,7 @@ function problem2(A)
     for j in 1:N
       for i in 1:N
         if grid[i, j, k] == 0 && is_void(grid, i, j, k)
-          push!(ec, [i, j, k])
+          push!(ec, (i, j, k))
         end
       end
     end
