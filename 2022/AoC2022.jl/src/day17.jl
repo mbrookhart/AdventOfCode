@@ -111,16 +111,18 @@ end
 
 function drop_rocks!(grid, rocks, gusts, N)
   Key = Tuple{Matrix{T}, Int}
-  memo = Dict{Key, Tuple{Matrix{T}, Int, Int, Int}}()
+  State = Tuple{Matrix{T}, Int, Int, Int}
+  memo = Dict{Key, Vector{State}}()
   memo_chain = Vector{Key}()
   i = 0
   while i < N - 1
     memoized = false
     gust_index = gusts.index
     key = deepcopy((grid.grid, gust_index))
-    if key in keys(memo) && i < N - memo[key][4]
+    if key in keys(memo) && any([i < N - m[4] for m in memo[key]])
+      max_ind = findlast(x -> x, [i < N - m[4] for m in memo[key]])
       ## update the grid with the memoized value
-      g, hd, gi, num = memo[key]
+      g, hd, gi, num = memo[key][max_ind]
       grid.grid = deepcopy(g)
       grid.height += hd
       gusts.index = gi
@@ -129,9 +131,10 @@ function drop_rocks!(grid, rocks, gusts, N)
       # replace the memoized values with the extendend value
       # of the memoized chain
       for k in memo_chain
-        new_num = memo[k][4] + num
+        m = memo[k][end]
+        new_num = m[4] + num
         if new_num < N ÷ 10
-          memo[k] = (g, memo[k][2] + hd, gi, memo[k][4] + num)
+          push!(memo[k], (g, m[2] + hd, gi, m[4] + num))
         end
       end
       # push the current memoized value onto the chain
@@ -146,9 +149,9 @@ function drop_rocks!(grid, rocks, gusts, N)
       end
       # Add the updated grid to the memo, reset the chain 
       memo_chain = Vector{Key}()
-      memo[key] = (deepcopy(grid.grid), 
-                   top_of_grid(grid) - old_height, 
-                   gusts.index, lim)
+      memo[key] = [(deepcopy(grid.grid), 
+                    top_of_grid(grid) - old_height, 
+                    gusts.index, lim)]
       push!(memo_chain, key)
       i += lim
     end
