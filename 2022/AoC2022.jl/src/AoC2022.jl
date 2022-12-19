@@ -18,5 +18,6 @@ include("day15.jl")
 include("day16.jl")
 include("day17.jl")
 include("day18.jl")
+include("day19.jl")
 
 end # module AoC2022
