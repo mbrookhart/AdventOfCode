@@ -34,12 +34,14 @@ end
 
 function compute(monkeys, name)
   monkey = monkeys[name]
-  @match monkeys[name].op begin
+  left() = compute(monkeys, monkey.inputs[1])
+  right() = compute(monkeys, monkey.inputs[2])
+  @match monkey.op begin
     "val" => monkey.val
-    "+" => compute(monkeys, monkey.inputs[1]) + compute(monkeys, monkey.inputs[2])
-    "-" => compute(monkeys, monkey.inputs[1]) - compute(monkeys, monkey.inputs[2])
-    "*" => compute(monkeys, monkey.inputs[1]) * compute(monkeys, monkey.inputs[2])
-    "/" => compute(monkeys, monkey.inputs[1]) / compute(monkeys, monkey.inputs[2])
+    "+" => left() + right()
+    "-" => left() - right()
+    "*" => left() * right()
+    "/" => left() / right()
   end
 end
 
@@ -56,8 +58,8 @@ function problem2(data)
   fx = compute(data, "root")
   ## Use Newton's method to find the zero
   while fx != 0
-    delta = Int(round(-.01*i))
-    delta = delta == 0 ? -1 : delta
+    delta = Int(round(0.01*i))
+    delta = delta == 0 ? 1 : delta
     # estimate the first derivtive as df/dx = (f(x + h) - f(x)) / h
     data["humn"] = Monkey(human.name, human.op, i + delta, human.inputs)
     df_dx = (compute(data, "root") - fx)/delta
