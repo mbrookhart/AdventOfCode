@@ -1,0 +1,10 @@
+name = "AoC2023"
+uuid = "da2e0c4c-d165-4cd5-9ad4-522c0a7f62fc"
+authors = ["mbrookhart "]
+version = "0.1.0"
+
+[deps]
+InlineTest = "bd334432-b1e7-49c7-a2dc-dd9149e4ebd6"
+JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
+Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
